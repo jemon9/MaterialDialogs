@@ -4,12 +4,14 @@ import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.res.Resources;
 import android.content.res.TypedArray;
+import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.os.Build;
 import android.util.AttributeSet;
 import android.view.View;
 import android.view.ViewGroup;
 
+import njtech.nanjing.com.core.GravityEnum;
 import njtech.nanjing.com.core.R;
 import njtech.nanjing.com.core.StackBehavior;
 import njtech.nanjing.com.core.utils.DialogUtils;
@@ -19,6 +21,10 @@ import njtech.nanjing.com.core.utils.DialogUtils;
  */
 
 public class MDRootLayout extends ViewGroup {
+
+    private static final int BUTTON_NEUTRAL_INDEX = 0;
+    private static final int BUTTON_NEGATIVE_INDEX = 1;
+    private static final int BUTTON_POSITIVE_INDEX = 2;
 
     private boolean reducePaddingNoTitleNoButtons;
     private int noTitlePaddingFull;
@@ -31,9 +37,12 @@ public class MDRootLayout extends ViewGroup {
     private View titleBar;
     private View content;
     private final MDButton[] buttons = new MDButton[3];
+    private GravityEnum buttonGravity = GravityEnum.START;
     private boolean useFullPadding;
     private boolean isStacked;
     private boolean noTitleNoPadding;
+    private boolean drawTopDivider = false;
+    private boolean drawBottomDivider = false;
     private StackBehavior stackBehavior = StackBehavior.ADAPTIVE;
 
     public MDRootLayout(Context context) {
@@ -203,32 +212,138 @@ public class MDRootLayout extends ViewGroup {
 
     @Override
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
-        if (isVisiable(titleBar)){
+        //layout title
+        if (isVisiable(titleBar)) {
             int height = titleBar.getMeasuredHeight();
-            titleBar.layout(l,t,r,t + height);
-        }else {
+            titleBar.layout(l, t, r, t + height);
+        } else {
             t += noTitlePaddingFull;
         }
 
-        if (isVisiable(content)){
-            content.layout(l,t,r,t + content.getMeasuredHeight());
+        //layout content
+        if (isVisiable(content)) {
+            content.layout(l, t, r, t + content.getMeasuredHeight());
         }
 
-        if (isStacked){
+        //layout button
+        if (isStacked) {
             b -= buttonPaddingFull;
-            for (MDButton button : buttons){
-                if (isVisiable(button)){
-                    button.layout(l,b - button.getMeasuredHeight(),r,b);
+            for (MDButton button : buttons) {
+                if (isVisiable(button)) {
+                    button.layout(l, b - button.getMeasuredHeight(), r, b);
                     b -= button.getMeasuredHeight();
                 }
             }
-        }else {
+        } else {
             int barTop;
             int barBottom = b;
-            if (useFullPadding){
+            if (useFullPadding) {
                 barBottom -= buttonPaddingFull;
             }
             barTop = barBottom - buttonBarHeight;
+
+            /**
+             * START:
+             *      neutral negative positive
+             *
+             * CENTER:
+             *      negative neutral positive
+             *
+             * END:
+             *      positive negative neutral
+             */
+            int offset = buttonHorizontalEdgeMargin;
+            int neutralLeft = -1; //用于记录START和CENTER时的positive的mLeft
+            int neutralRight = -1; //用于记录END 时的positive的mRight
+            if (isVisiable(buttons[BUTTON_POSITIVE_INDEX])) {
+                int bl, br;
+                if (buttonGravity == GravityEnum.END) {
+                    //END
+                    bl = l + offset;
+                    br = bl + buttons[BUTTON_POSITIVE_INDEX].getMeasuredWidth();
+                } else {
+                    //START or CENTER
+                    br = r - offset;
+                    bl = br - buttons[BUTTON_POSITIVE_INDEX].getMeasuredWidth();
+                    neutralRight = bl;
+                }
+                buttons[BUTTON_POSITIVE_INDEX].layout(bl, barTop, br, barBottom);
+                offset += buttons[BUTTON_POSITIVE_INDEX].getMeasuredWidth();
+            }
+            if (isVisiable(buttons[BUTTON_NEGATIVE_INDEX])) {
+                int bl, br;
+                if (buttonGravity == GravityEnum.CENTER) {
+                    //CENTER
+                    bl = l + buttonHorizontalEdgeMargin;
+                    br = bl + buttons[BUTTON_NEGATIVE_INDEX].getMeasuredWidth();
+                    neutralLeft = br;
+                } else if (buttonGravity == GravityEnum.START) {
+                    //START
+                    br = r - offset;
+                    bl = br - buttons[BUTTON_NEGATIVE_INDEX].getMeasuredWidth();
+                } else {
+                    //END
+                    bl = l + offset;
+                    br = bl + buttons[BUTTON_NEGATIVE_INDEX].getMeasuredWidth();
+                }
+                buttons[BUTTON_NEGATIVE_INDEX].layout(bl, barTop, br, barBottom);
+            }
+            if (isVisiable(buttons[BUTTON_NEUTRAL_INDEX])) {
+                int bl, br;
+                if (buttonGravity == GravityEnum.START) {
+                    //START
+                    bl = l + buttonHorizontalEdgeMargin;
+                    br = bl + buttons[BUTTON_NEUTRAL_INDEX].getMeasuredWidth();
+                } else if (buttonGravity == GravityEnum.END) {
+                    //END
+                    br = r - buttonHorizontalEdgeMargin;
+                    bl = br - buttons[BUTTON_NEUTRAL_INDEX].getMeasuredWidth();
+                } else {
+                    //CENTER
+                    if (neutralLeft == -1 && neutralRight != -1) {
+                        neutralLeft = neutralRight - buttons[BUTTON_NEUTRAL_INDEX].getMeasuredWidth();
+                    } else if (neutralLeft != -1 && neutralRight == -1) {
+                        neutralRight = neutralLeft + buttons[BUTTON_NEUTRAL_INDEX].getMeasuredWidth();
+                    } else if (neutralRight == -1) {
+                        neutralLeft = (r - l) / 2 - buttons[BUTTON_NEUTRAL_INDEX].getMeasuredWidth() / 2;
+                        neutralRight = neutralLeft + buttons[BUTTON_NEUTRAL_INDEX].getMeasuredWidth();
+                    }
+                    buttons[BUTTON_NEUTRAL_INDEX].layout(neutralLeft, barTop, neutralRight, barBottom);
+                }
+            }
+        }
+
+        setUpDividerVisiable(content, true, true);
+    }
+
+    private void setUpDividerVisiable(View view, boolean setForTop, boolean setForBottom) {
+        if (view == null) {
+            return;
+        }
+        // TODO: 2017/6/26 setUpDividerVisiable
+
+    }
+
+    @Override
+    protected void onDraw(Canvas canvas) {
+        if (content != null) {
+            if (drawTopDivider) {
+                int topY = content.getTop();
+                canvas.drawLine(0, topY - dividerHeight, getMeasuredWidth(), topY, dividerPaint);
+            }
+            if (drawBottomDivider) {
+                int bottomY = content.getBottom();
+                canvas.drawLine(0, bottomY, getMeasuredWidth(), bottomY + dividerHeight, dividerPaint);
+            }
+        }
+    }
+
+    @Override
+    protected void onFinishInflate() {
+        super.onFinishInflate();
+        for (int i = 0; i < getChildCount(); i++){
+            View view = getChildAt(i);
+//            if (view.getId() == )
         }
     }
 }
