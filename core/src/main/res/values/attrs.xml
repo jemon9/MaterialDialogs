@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="MDRootLayout">
+        <attr name="md_reduce_padding_no_title_no_buttons" format="boolean"></attr>
+    </declare-styleable>
+    <attr name="md_divider_color" format="color"/>
+</resources>

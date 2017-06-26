@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="md_notitle_vertical_padding">16dp</dimen>
+    <dimen name="md_button_frame_vertical_padding">8dp</dimen>
+    <dimen name="md_button_padding_frame_side">12dp</dimen>
+    <dimen name="md_buttonbar_height">48dp</dimen>
+    <dimen name="md_divider_height">1dp</dimen>
+    <dimen name="md_neutral_button_margin">12dp</dimen>
+</resources>
