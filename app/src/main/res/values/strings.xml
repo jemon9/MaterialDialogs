@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">MaterialDialogs</string>
+    <string name="btn_1">Basic Dialog</string>
 </resources>

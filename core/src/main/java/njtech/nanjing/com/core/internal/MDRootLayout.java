@@ -99,6 +99,11 @@ public class MDRootLayout extends ViewGroup {
         invalidate();
     }
 
+    public void setDividerColor(int dividerColor) {
+        this.dividerPaint.setColor(dividerColor);
+        invalidate();
+    }
+
     public void setNoTitleNoPadding() {
         this.noTitleNoPadding = true;
     }
@@ -341,7 +346,7 @@ public class MDRootLayout extends ViewGroup {
     @Override
     protected void onFinishInflate() {
         super.onFinishInflate();
-        for (int i = 0; i < getChildCount(); i++){
+        for (int i = 0; i < getChildCount(); i++) {
             View view = getChildAt(i);
 //            if (view.getId() == )
         }
