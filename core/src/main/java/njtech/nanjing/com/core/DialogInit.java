@@ -2,9 +2,12 @@ package njtech.nanjing.com.core;
 
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
+import android.os.Build;
 import android.support.annotation.LayoutRes;
 import android.support.annotation.NonNull;
 import android.support.annotation.StyleRes;
+import android.support.annotation.UiThread;
+import android.text.method.LinkMovementMethod;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -49,6 +52,8 @@ public class DialogInit {
      *
      * @param dialog
      */
+    @SuppressWarnings("ConstantConditions")
+    @UiThread
     static void init(final MaterialDialog dialog) {
         final MaterialDialog.Builder builder = dialog.builder;
 
@@ -155,5 +160,82 @@ public class DialogInit {
             builder.dividerColor = DialogUtils.resolveColor(builder.context, R.attr.md_divider_color, dividerColorFallback);
         }
         dialog.view.setDividerColor(builder.dividerColor);
+
+        //setup title and titleFrame
+        if (dialog.title != null) {
+            dialog.title.setTextColor(builder.titleColor);
+            dialog.title.setGravity(builder.titleGravity.getGravityInt());
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+                dialog.title.setTextAlignment(builder.titleGravity.getTextAlignmentInt());
+            }
+            if (builder.title == null) {
+                dialog.titleFrame.setVisibility(View.GONE);
+            } else {
+                dialog.title.setText(builder.title);
+                dialog.titleFrame.setVisibility(View.VISIBLE);
+            }
+        }
+
+        //setup content
+        if (dialog.content != null) {
+            //设置超链接
+            dialog.content.setMovementMethod(new LinkMovementMethod());
+            dialog.content.setLineSpacing(0f, builder.contentLineSpaceMultiplier);
+            dialog.content.setTextColor(builder.contentColor);
+            dialog.content.setGravity(builder.contentGravity.getGravityInt());
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+                dialog.content.setTextAlignment(builder.contentGravity.getTextAlignmentInt());
+            }
+            if (builder.content != null) {
+                dialog.content.setText(builder.content);
+                dialog.content.setVisibility(View.VISIBLE);
+            } else {
+                dialog.content.setVisibility(View.GONE);
+            }
+        }
+
+        //setup buttons
+        dialog.view.setButtonGravity(builder.buttonsGravity);
+        dialog.view.setButtonsStackedGravity(builder.btnStackedGravity);
+        dialog.view.setStackBehavior(builder.stackBehavior);
+        boolean textAllCaps;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH) {
+            textAllCaps = DialogUtils.resolveBoolean(builder.context, android.R.attr.textAllCaps, true);
+            if (textAllCaps) {
+                textAllCaps = DialogUtils.resolveBoolean(builder.context, R.attr.textAllCaps, true);
+            }
+        } else {
+            textAllCaps = DialogUtils.resolveBoolean(builder.context, R.attr.textAllCaps, true);
+        }
+        MDButton positiveTextView = dialog.positiveButton;
+        positiveTextView.setAllCapsCompat(textAllCaps);   //该设置不能由builder构建，只能从系统中获取选择并构建
+        positiveTextView.setText(builder.positiveText);
+        positiveTextView.setTextColor(builder.positiveColor);
+        dialog.positiveButton.setStackedSelector(dialog.getButtonSelector(DialogAction.POSITIVE, true));
+        dialog.positiveButton.setDefaultSelector(dialog.getButtonSelector(DialogAction.POSITIVE, false));
+        dialog.positiveButton.setTag(DialogAction.POSITIVE);
+        dialog.positiveButton.setOnClickListener(dialog);
+        dialog.positiveButton.setVisibility(View.VISIBLE);
+
+        MDButton neutralTextView = dialog.neutralButton;
+        neutralTextView.setAllCapsCompat(textAllCaps);
+        neutralTextView.setText(builder.neutralText);
+        neutralTextView.setTextColor(builder.neutralColor);
+        dialog.neutralButton.setStackedSelector(dialog.getButtonSelector(DialogAction.NEUTRAL, true));
+        dialog.neutralButton.setDefaultSelector(dialog.getButtonSelector(DialogAction.NEUTRAL, false));
+        dialog.neutralButton.setTag(DialogAction.NEUTRAL);
+        dialog.neutralButton.setOnClickListener(dialog);
+        dialog.neutralButton.setVisibility(View.VISIBLE);
+
+        MDButton negativeTextView = dialog.negativeButton;
+        negativeTextView.setAllCapsCompat(textAllCaps);
+        negativeTextView.setText(builder.negativeText);
+        negativeTextView.setTextColor(builder.negativeColor);
+        negativeTextView.setStackedSelector(dialog.getButtonSelector(DialogAction.NEGATIVE,true));
+        negativeTextView.setDefaultSelector(dialog.getButtonSelector(DialogAction.NEGATIVE,false));
+        negativeTextView.setTag(DialogAction.NEGATIVE);
+        negativeTextView.setOnClickListener(dialog);
+        negativeTextView.setVisibility(View.VISIBLE);
+
     }
 }

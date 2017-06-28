@@ -11,9 +11,11 @@ import android.support.annotation.ColorInt;
 import android.support.annotation.ColorRes;
 import android.support.v4.content.ContextCompat;
 import android.util.TypedValue;
+import android.view.View;
 
 import njtech.nanjing.com.core.GravityEnum;
 import njtech.nanjing.com.core.R;
+import njtech.nanjing.com.core.internal.MDButton;
 
 /**
  * Created by 张志付 on 2017/6/25.
@@ -197,15 +199,28 @@ public class DialogUtils {
     }
 
     public static boolean resolveBoolean(Context context, @AttrRes int boolAttr) {
-        return resolveBoolean(context,boolAttr,false);
+        return resolveBoolean(context, boolAttr, false);
     }
 
-    public static boolean resolveBoolean(Context context,@AttrRes int boolAttr, boolean defValue){
+    public static boolean resolveBoolean(Context context, @AttrRes int boolAttr, boolean defValue) {
         TypedArray a = context.obtainStyledAttributes(new int[]{boolAttr});
         try {
-            return a.getBoolean(0,defValue);
-        }finally {
+            return a.getBoolean(0, defValue);
+        } finally {
             a.recycle();
+        }
+    }
+
+    /**
+     * 设置view的背景,区别不同api版本
+     * @param view
+     * @param drawable
+     */
+    public static void setBackgroundCompat(View view, Drawable drawable) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN) {
+            view.setBackgroundDrawable(drawable);
+        } else {
+            view.setBackground(drawable);
         }
     }
 }

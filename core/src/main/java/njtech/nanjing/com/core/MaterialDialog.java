@@ -30,7 +30,7 @@ import njtech.nanjing.com.core.utils.DialogUtils;
  * Created by 张志付 on 2017/6/24.
  */
 
-public class MaterialDialog extends DialogBase {
+public class MaterialDialog extends DialogBase implements View.OnClickListener {
 
     protected final Builder builder;
     protected ImageView icon;
@@ -120,6 +120,72 @@ public class MaterialDialog extends DialogBase {
         setContent(builder.context.getString(contentId, formatArgs));
     }
 
+    @Override
+    public void onClick(View v) {
+
+    }
+
+    Drawable getButtonSelector(DialogAction which, boolean isStacked) {
+        if (isStacked) {
+            if (builder.btnSelectorStacked != 0) {
+                return ResourcesCompat.getDrawable(builder.context.getResources(), builder.btnSelectorStacked, null);
+            }
+            final Drawable d = DialogUtils.resolveDrawable(builder.context, R.attr.md_btn_stacked_selector);
+            if (d != null) {
+                return d;
+            }
+            return DialogUtils.resolveDrawable(getContext(), R.attr.md_btn_stacked_selector);
+        } else {
+            switch (which) {
+                default: {
+                    if (builder.btnSelectorPositive != 0) {
+                        return ResourcesCompat.getDrawable(builder.context.getResources(), builder.btnSelectorPositive, null);
+                    }
+                    Drawable d = DialogUtils.resolveDrawable(builder.context, R.attr.md_btn_positive_selector);
+                    if (d != null) {
+                        return d;
+                    }
+                    d = DialogUtils.resolveDrawable(getContext(), R.attr.md_btn_positive_selector);
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                        //设置水波效果
+                        // TODO: 2017/6/28 设置drawable的水波效果
+                    }
+                    return d;
+                }
+                case NEUTRAL: {
+                    if (builder.btnSelectorNeutral != 0) {
+                        return ResourcesCompat.getDrawable(builder.context.getResources(), builder.btnSelectorNeutral, null);
+                    }
+                    Drawable d = DialogUtils.resolveDrawable(builder.context, R.attr.md_btn_neutral_selector);
+                    if (d != null) {
+                        return d;
+                    }
+                    d = DialogUtils.resolveDrawable(getContext(), R.attr.md_btn_neutral_selector);
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                        //设置水波效果
+                        // TODO: 2017/6/28 设置drawable的水波效果
+                    }
+                    return d;
+                }
+                case NEGATIVE: {
+                    if (builder.btnSelectorNegative != 0) {
+                        return ResourcesCompat.getDrawable(builder.context.getResources(), builder.btnSelectorNegative, null);
+                    }
+                    Drawable d = DialogUtils.resolveDrawable(builder.context, R.attr.md_btn_negative_selector);
+                    if (d != null) {
+                        return d;
+                    }
+                    d = DialogUtils.resolveDrawable(getContext(), R.attr.md_btn_negative_selector);
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                        //设置水波效果
+                        // TODO: 2017/6/28 设置drawable的水波效果
+                    }
+                    return d;
+                }
+
+            }
+        }
+    }
 
     /**
      * 创建MaterialDialog
@@ -136,6 +202,7 @@ public class MaterialDialog extends DialogBase {
         protected Drawable icon;
         protected View customView;
         protected CharSequence content;
+        protected StackBehavior stackBehavior;
         protected GravityEnum titleGravity = GravityEnum.START;
         protected GravityEnum contentGravity = GravityEnum.START;
         protected GravityEnum btnStackedGravity = GravityEnum.END;
@@ -164,6 +231,18 @@ public class MaterialDialog extends DialogBase {
         protected int backgroundColor;
         protected int maxIconSize = -1;
         protected int dividerColor;
+
+        @DrawableRes
+        protected int btnSelectorStacked;
+
+        @DrawableRes
+        protected int btnSelectorPositive;
+
+        @DrawableRes
+        protected int btnSelectorNeutral;
+
+        @DrawableRes
+        protected int btnSelectorNegative;
 
 
         public Builder(Context context) {
@@ -466,6 +545,33 @@ public class MaterialDialog extends DialogBase {
 
         public Builder maxIconSizeRes(@DimenRes int maxIconSizeRes) {
             return maxIconSize((int) context.getResources().getDimension(maxIconSizeRes));
+        }
+
+        public Builder setStackedBehavior(StackBehavior stackedBehavior) {
+            this.stackBehavior = stackedBehavior;
+            return this;
+        }
+
+        public Builder btnSelector(@DrawableRes int selectorRes) {
+            this.btnSelectorPositive = selectorRes;
+            this.btnSelectorNeutral = selectorRes;
+            this.btnSelectorNegative = selectorRes;
+            return this;
+        }
+
+        public Builder btnSelector(@DrawableRes int selectorRes, @NonNull DialogAction dialogAction) {
+            switch (dialogAction) {
+                default:
+                    this.btnSelectorPositive = selectorRes;
+                    break;
+                case NEUTRAL:
+                    this.btnSelectorNeutral = selectorRes;
+                    break;
+                case NEGATIVE:
+                    this.btnSelectorNegative = selectorRes;
+                    break;
+            }
+            return this;
         }
 
         public Builder customView(@LayoutRes int layoutId, boolean wrapInScrollView) {

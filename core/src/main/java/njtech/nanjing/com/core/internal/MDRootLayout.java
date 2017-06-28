@@ -2,6 +2,7 @@ package njtech.nanjing.com.core.internal;
 
 import android.annotation.TargetApi;
 import android.content.Context;
+import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.content.res.TypedArray;
 import android.graphics.Canvas;
@@ -327,6 +328,37 @@ public class MDRootLayout extends ViewGroup {
         }
         // TODO: 2017/6/26 setUpDividerVisiable
 
+    }
+
+    public void setButtonGravity(GravityEnum buttonGravity){
+        this.buttonGravity = buttonGravity;
+        invertGravityIfNecessary();
+    }
+
+    //如果view的方向是右-->左，转换成左-->右
+    private void invertGravityIfNecessary() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN_MR1){
+            return;
+        }
+        Configuration config = getResources().getConfiguration();
+        if (config.getLayoutDirection() == View.LAYOUT_DIRECTION_RTL){
+            switch (buttonGravity){
+                case START:
+                    buttonGravity = GravityEnum.END;
+                    break;
+                case END:
+                    buttonGravity = GravityEnum.START;
+                    break;
+            }
+        }
+    }
+
+    public void setButtonsStackedGravity(GravityEnum stackedGravity){
+        for (MDButton button : buttons){
+            if (button != null){
+                button.setStackedGravity(stackedGravity);
+            }
+        }
     }
 
     @Override
