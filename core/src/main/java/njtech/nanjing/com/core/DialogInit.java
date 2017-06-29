@@ -1,5 +1,7 @@
 package njtech.nanjing.com.core;
 
+import android.content.res.Resources;
+import android.graphics.Point;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
@@ -8,11 +10,18 @@ import android.support.annotation.NonNull;
 import android.support.annotation.StyleRes;
 import android.support.annotation.UiThread;
 import android.text.method.LinkMovementMethod;
+import android.view.Display;
 import android.view.View;
+import android.view.ViewGroup;
+import android.view.WindowManager;
+import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.ScrollView;
 import android.widget.TextView;
 
 import njtech.nanjing.com.core.internal.MDButton;
+import njtech.nanjing.com.core.internal.MDRootLayout;
 import njtech.nanjing.com.core.utils.DialogUtils;
 
 /**
@@ -29,7 +38,9 @@ public class DialogInit {
      */
     @StyleRes
     static int getTheme(@NonNull MaterialDialog.Builder builder) {
-        return 0;
+        boolean darkTheme = DialogUtils.resolveBoolean(builder.context,R.attr.md_dark_theme,builder.theme == Theme.DARK);
+        builder.theme = darkTheme ? Theme.DARK : Theme.LIGHT;
+        return darkTheme ? R.style.MD_Dark : R.style.MD_Light;
     }
 
     /**
@@ -54,7 +65,7 @@ public class DialogInit {
      */
     @SuppressWarnings("ConstantConditions")
     @UiThread
-    static void init(final MaterialDialog dialog) {
+    public static void init(final MaterialDialog dialog) {
         final MaterialDialog.Builder builder = dialog.builder;
 
         dialog.setCancelable(builder.cancelable);
@@ -231,11 +242,75 @@ public class DialogInit {
         negativeTextView.setAllCapsCompat(textAllCaps);
         negativeTextView.setText(builder.negativeText);
         negativeTextView.setTextColor(builder.negativeColor);
-        negativeTextView.setStackedSelector(dialog.getButtonSelector(DialogAction.NEGATIVE,true));
-        negativeTextView.setDefaultSelector(dialog.getButtonSelector(DialogAction.NEGATIVE,false));
+        negativeTextView.setStackedSelector(dialog.getButtonSelector(DialogAction.NEGATIVE, true));
+        negativeTextView.setDefaultSelector(dialog.getButtonSelector(DialogAction.NEGATIVE, false));
         negativeTextView.setTag(DialogAction.NEGATIVE);
         negativeTextView.setOnClickListener(dialog);
         negativeTextView.setVisibility(View.VISIBLE);
 
+        //setup custom view
+        if (builder.customView != null) {
+            ((MDRootLayout) dialog.findViewById(R.id.root)).setNoTitleNoPadding();
+            FrameLayout frameLayout = (FrameLayout) dialog.findViewById(R.id.md_customViewFrame);
+            dialog.customViewFrame = frameLayout;
+            View innerView = builder.customView;
+            if (innerView.getParent() != null) {
+                ((ViewGroup) innerView.getParent()).removeView(innerView);
+            }
+            if (builder.wrapCustomViewInScroll) {
+                final Resources r = dialog.getContext().getResources();
+                final int framePadding = r.getDimensionPixelSize(R.dimen.md_dialog_frame_margin);
+                final ScrollView sv = new ScrollView(dialog.getContext());
+                int paddingTop = r.getDimensionPixelSize(R.dimen.md_content_padding_top);
+                int paddingBottom = r.getDimensionPixelSize(R.dimen.md_content_padding_bottom);
+                sv.setClipToPadding(false);
+                if (innerView instanceof EditText) {
+                    sv.setPadding(framePadding, paddingTop, framePadding, paddingBottom);
+                } else {
+                    sv.setPadding(0, paddingTop, 0, paddingBottom);
+                    innerView.setPadding(framePadding, 0, framePadding, 0);
+                }
+                sv.addView(innerView, new ScrollView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+                innerView = sv;
+            }
+            frameLayout.addView(innerView, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        }
+
+        //setup user listener
+        if (builder.onShowListener != null) {
+            dialog.setOnShowListener(builder.onShowListener);
+        }
+        if (builder.onCancelListener != null) {
+            dialog.setOnCancelListener(builder.onCancelListener);
+        }
+        if (builder.onDismissListener != null) {
+            dialog.setOnDismissListener(builder.onDismissListener);
+        }
+        if (builder.onKeyListener != null) {
+            dialog.setOnKeyListener(builder.onKeyListener);
+        }
+
+        //setup internal show listener
+        dialog.setOnShowListenerInternal();
+
+        //setup other internal init
+        dialog.setViewInternal(dialog.view);
+
+        //setup min height and max width calculations
+        WindowManager wm = dialog.getWindow().getWindowManager();
+        Display display = wm.getDefaultDisplay();
+        Point size = new Point();
+        display.getSize(size);
+        final int windowWidth = size.x;
+        final int windowHeight = size.y;
+        final int windowVerticalPadding = builder.context.getResources().getDimensionPixelSize(R.dimen.md_dialog_vertical_margin);
+        final int windowHorizontalPadding = builder.context.getResources().getDimensionPixelSize(R.dimen.md_dialog_horizontal_margin);
+        final int maxWidth = builder.context.getResources().getDimensionPixelSize(R.dimen.md_dialog_max_width);
+        final int calculatedWidth = windowWidth - 2 * windowHorizontalPadding;
+        dialog.view.setMaxHeight(windowHeight - 2 * windowVerticalPadding);
+        WindowManager.LayoutParams lp = new WindowManager.LayoutParams();
+        lp.copyFrom(dialog.getWindow().getAttributes());
+        lp.width = Math.min(maxWidth, calculatedWidth);
+        dialog.getWindow().setAttributes(lp);
     }
 }

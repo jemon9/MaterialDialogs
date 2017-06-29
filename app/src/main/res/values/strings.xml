@@ -1,4 +1,8 @@
 <resources>
     <string name="app_name">MaterialDialogs</string>
     <string name="btn_1">Basic Dialog</string>
+    <string name="dialog_content">This is content view</string>
+    <string name="dialog_ok">确定</string>
+    <string name="dialog_cancel">取消</string>
+    <string name="dialog_neutral">中立</string>
 </resources>

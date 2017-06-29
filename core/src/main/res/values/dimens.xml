@@ -21,5 +21,14 @@
     <dimen name="md_content_textsize">16sp</dimen>
     <dimen name="md_bg_corner_radius">2dp</dimen>
     <dimen name="md_icon_max_size">48dp</dimen>
+    <dimen name="md_dialog_vertical_margin">52dp</dimen>
+    <dimen name="md_dialog_horizontal_margin">48dp</dimen>
+    <dimen name="md_dialog_max_width">496dp</dimen>
+
+    <dimen name="md_button_inset_vertical">6dp</dimen>
+    <dimen name="md_button_inset_horizontal">4dp</dimen>
+    <dimen name="md_action_corner_radius">2dp</dimen>
+    <dimen name="md_button_padding_vertical">4dp</dimen>
+    <dimen name="md_button_padding_horizontal">8dp</dimen>
 
 </resources>

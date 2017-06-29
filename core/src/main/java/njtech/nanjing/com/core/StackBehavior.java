@@ -10,5 +10,5 @@ package njtech.nanjing.com.core;
 public enum StackBehavior {
     ALWAYS,
     ADAPTIVE,
-    NEVER
+    NEVER    //不显示按钮
 }

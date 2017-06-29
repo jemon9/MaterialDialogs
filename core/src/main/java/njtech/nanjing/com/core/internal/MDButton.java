@@ -64,6 +64,10 @@ public class MDButton extends TextView {
         this.stackedGravity = stackedGravity;
     }
 
+    /**
+     * 设置背景图片
+     * @param d
+     */
     public void setStackedSelector(Drawable d) {
         stackedBackground = d;
         if (stacked) {

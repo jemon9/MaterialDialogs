@@ -53,4 +53,7 @@
     <attr name="md_btn_positive_selector" format="reference"/>
     <attr name="md_btn_neutral_selector" format="reference"/>
     <attr name="md_btn_negative_selector" format="reference"/>
+    <attr name="md_dark_theme" format="boolean"/>
+
+    <attr name="md_list_selector" format="reference" />
 </resources>

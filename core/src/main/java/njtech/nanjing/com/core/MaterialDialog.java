@@ -19,11 +19,13 @@ import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 
 import njtech.nanjing.com.core.internal.MDButton;
 import njtech.nanjing.com.core.internal.MDRootLayout;
+import njtech.nanjing.com.core.internal.ThemeSingleton;
 import njtech.nanjing.com.core.utils.DialogUtils;
 
 /**
@@ -40,6 +42,8 @@ public class MaterialDialog extends DialogBase implements View.OnClickListener {
     MDButton positiveButton;
     MDButton neutralButton;
     MDButton negativeButton;
+
+    FrameLayout customViewFrame;
 
     protected MaterialDialog(Builder builder) {
         super(builder.context, DialogInit.getTheme(builder));
@@ -122,9 +126,42 @@ public class MaterialDialog extends DialogBase implements View.OnClickListener {
 
     @Override
     public void onClick(View v) {
-
+        DialogAction tag = (DialogAction) v.getTag();
+        switch (tag) {
+            case POSITIVE:
+                if (builder.onPositiveCallback != null) {
+                    builder.onPositiveCallback.onClick(this, tag);
+                }
+                if (builder.autoDismiss){
+                    dismiss();
+                }
+                break;
+            case NEUTRAL:
+                if (builder.onNeutralCallback != null){
+                    builder.onNeutralCallback.onClick(this,tag);
+                }
+                if (builder.autoDismiss){
+                    dismiss();
+                }
+                break;
+            case NEGATIVE:
+                if (builder.onNegativeCallback != null){
+                    builder.onNegativeCallback.onClick(this,tag);
+                }
+                if (builder.autoDismiss){
+                    cancel();
+                }
+                break;
+        }
     }
 
+    /**
+     * 获取按钮的背景图片
+     *
+     * @param which     POSITIVE  NEUTRAL  NEGATIVE
+     * @param isStacked 是否层叠
+     * @return
+     */
     Drawable getButtonSelector(DialogAction which, boolean isStacked) {
         if (isStacked) {
             if (builder.btnSelectorStacked != 0) {
@@ -187,6 +224,11 @@ public class MaterialDialog extends DialogBase implements View.OnClickListener {
         }
     }
 
+
+    public interface SingleButtonCallback {
+        void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which);
+    }
+
     /**
      * 创建MaterialDialog
      */
@@ -231,6 +273,17 @@ public class MaterialDialog extends DialogBase implements View.OnClickListener {
         protected int backgroundColor;
         protected int maxIconSize = -1;
         protected int dividerColor;
+        protected Theme theme = Theme.LIGHT;
+        protected OnShowListener onShowListener;
+        protected OnCancelListener onCancelListener;
+        protected OnDismissListener onDismissListener;
+        protected OnKeyListener onKeyListener;
+
+        protected boolean autoDismiss = true;
+        protected SingleButtonCallback onPositiveCallback;
+        protected SingleButtonCallback onNeutralCallback;
+        protected SingleButtonCallback onNegativeCallback;
+        protected SingleButtonCallback onAnyCallback;
 
         @DrawableRes
         protected int btnSelectorStacked;
@@ -264,6 +317,12 @@ public class MaterialDialog extends DialogBase implements View.OnClickListener {
                     .md_btn_ripple_color, DialogUtils.resolveColor(context, R.attr
                     .colorControlHighlight, fallback));
 
+            //setup the default theme based on Activity theme's primary color darkness(more white or more black)
+            final int primaryTextColor = DialogUtils.resolveColor(context, android.R.attr.textColorPrimary);
+            this.theme = DialogUtils.isColorDark(primaryTextColor) ? Theme.LIGHT : Theme.DARK;
+
+            checkSingleton();
+
             this.titleGravity = DialogUtils.resolveGravityEnum(context, R.attr.md_title_gravity,
                     this.titleGravity);
             this.contentGravity = DialogUtils.resolveGravityEnum(context, R.attr
@@ -274,6 +333,63 @@ public class MaterialDialog extends DialogBase implements View.OnClickListener {
                     this.itemsGravity);
             this.buttonsGravity = DialogUtils.resolveGravityEnum(context, R.attr
                     .md_buttons_gravity, this.buttonsGravity);
+        }
+
+        private void checkSingleton() {
+            if (ThemeSingleton.get(false) == null) {
+                return;
+            }
+            ThemeSingleton ts = ThemeSingleton.get();
+            if (ts.darkTheme) {
+                this.theme = Theme.DARK;
+            }
+            if (ts.titleColor != 0) {
+                this.titleColor = ts.titleColor;
+            }
+            if (ts.contentColor != 0) {
+                this.contentColor = ts.contentColor;
+            }
+            if (ts.positiveColor != null) {
+                this.positiveColor = ts.positiveColor;
+            }
+            if (ts.neutralColor != null) {
+                this.neutralColor = ts.neutralColor;
+            }
+            if (ts.negativeColor != null) {
+                this.negativeColor = ts.negativeColor;
+            }
+            if (ts.icon != null) {
+                this.icon = ts.icon;
+            }
+            if (ts.backgroundColor != 0) {
+                this.backgroundColor = ts.backgroundColor;
+            }
+            if (ts.dividerColor != 0) {
+                this.dividerColor = ts.dividerColor;
+            }
+            if (ts.btnSelectorStacked != 0) {
+                this.btnSelectorStacked = ts.btnSelectorStacked;
+            }
+            if (ts.btnSelectorPositive != 0) {
+                this.btnSelectorPositive = ts.btnSelectorPositive;
+            }
+            if (ts.btnSelectorNeutral != 0) {
+                this.btnSelectorNeutral = ts.btnSelectorNeutral;
+            }
+            if (ts.btnSelectorNegative != 0) {
+                this.btnSelectorNegative = ts.btnSelectorNegative;
+            }
+            if (ts.widgetColor != 0) {
+                this.widgetColor = ts.widgetColor;
+            }
+//            if (ts.linkColor != null){
+//                this.linkColor = ts.linkColor;
+//            }
+            this.titleGravity = ts.titleGravity;
+            this.contentGravity = ts.contentGravity;
+            this.btnStackedGravity = ts.btnStackedGravity;
+            this.itemsGravity = ts.itemsGravity;
+            this.buttonsGravity = ts.buttonsGravity;
         }
 
         public final Context getContext() {
@@ -599,6 +715,56 @@ public class MaterialDialog extends DialogBase implements View.OnClickListener {
         public Builder setCancelable(boolean cancelable) {
             this.cancelable = cancelable;
             this.canceledOnTouchOutside = cancelable;
+            return this;
+        }
+
+        public Builder theme(@NonNull Theme theme) {
+            this.theme = theme;
+            return this;
+        }
+
+        public Builder autoDismiss(boolean autoDismiss) {
+            this.autoDismiss = autoDismiss;
+            return this;
+        }
+
+        public Builder onShowListener(@NonNull OnShowListener listener) {
+            this.onShowListener = listener;
+            return this;
+        }
+
+        public Builder onCancelListener(@NonNull OnCancelListener listener) {
+            this.onCancelListener = listener;
+            return this;
+        }
+
+        public Builder onDismissListener(@NonNull OnDismissListener listener) {
+            this.onDismissListener = listener;
+            return this;
+        }
+
+        public Builder onKeyListener(@NonNull OnKeyListener listener) {
+            this.onKeyListener = listener;
+            return this;
+        }
+
+        public Builder onPositive(@NonNull SingleButtonCallback callback) {
+            this.onPositiveCallback = callback;
+            return this;
+        }
+
+        public Builder onNegative(@NonNull SingleButtonCallback callback) {
+            this.onNegativeCallback = callback;
+            return this;
+        }
+
+        public Builder onNeutral(@NonNull SingleButtonCallback callback) {
+            this.onNeutralCallback = callback;
+            return this;
+        }
+
+        public Builder onAny(@NonNull SingleButtonCallback callback) {
+            this.onAnyCallback = callback;
             return this;
         }
 

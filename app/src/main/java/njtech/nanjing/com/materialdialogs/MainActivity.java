@@ -6,6 +6,7 @@ import android.view.View;
 
 import njtech.nanjing.com.core.GravityEnum;
 import njtech.nanjing.com.core.MaterialDialog;
+import njtech.nanjing.com.core.StackBehavior;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -16,13 +17,11 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void btn1Click(View view) {
-        new MaterialDialog.Builder(this)
-                .title("Hello")
-                .content("This is content view")
-                .negativeText("取消")
-                .positiveText("确定")
-                .neutralText("中立")
-                .buttonGravity(GravityEnum.CENTER)
+        new MaterialDialog.Builder(this).setStackedBehavior(StackBehavior.ALWAYS)
+                .title("Title")
+                .contentRes(R.string.dialog_content)
+                .negativeTextRes(R.string.dialog_cancel)
+                .positiveTextRes(R.string.dialog_ok)
                 .show();
     }
 }
