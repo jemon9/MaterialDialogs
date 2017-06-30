@@ -413,17 +413,38 @@ public class MDRootLayout extends ViewGroup {
         return topView;
     }
 
+    /**
+     * 判断RecyclerView是否可以滑动
+     * @param rv
+     * @return
+     */
     private boolean canRecyclerViewScroll(RecyclerView rv) {
-        return false;
+        return rv != null && rv.getLayoutManager() != null && rv.getLayoutManager().canScrollVertically();
     }
 
     private boolean canAdapterViewScroll(AdapterView av) {
-        return false;
+        if (av.getLastVisiblePosition() == -1) {
+            return false;
+        }
+        boolean firstItemVisible = av.getFirstVisiblePosition() == 0;
+        boolean lastItemVisible = av.getLastVisiblePosition() == av.getCount() - 1;
+        if (firstItemVisible && lastItemVisible && av.getChildCount() > 0) {
+            if (av.getChildAt(0).getTop() < av.getPaddingTop()) {
+                return true;
+            }
+            if (av.getChildAt(av.getChildCount() - 1).getBottom() > av.getPaddingBottom()) {
+                return true;
+            }
+        }
+        return true;
     }
 
     private boolean canScrollViewScroll(ScrollView sv) {
-        // TODO: 2017/6/29  canScrollViewScroll
-        return false;
+        if (sv == null || sv.getChildCount() == 0) {
+            return false;
+        }
+        final int childHeight = sv.getChildAt(0).getMeasuredHeight();
+        return sv.getMeasuredHeight() - sv.getPaddingTop() - sv.getPaddingBottom() < childHeight;
     }
 
 

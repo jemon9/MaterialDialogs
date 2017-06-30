@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.res.ColorStateList;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
+import android.os.Handler;
 import android.support.annotation.AttrRes;
 import android.support.annotation.ColorInt;
 import android.support.annotation.ColorRes;
@@ -16,12 +17,16 @@ import android.support.annotation.StringRes;
 import android.support.annotation.UiThread;
 import android.support.v4.content.res.ResourcesCompat;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
+
+import java.text.NumberFormat;
 
 import njtech.nanjing.com.core.internal.MDButton;
 import njtech.nanjing.com.core.internal.MDRootLayout;
@@ -35,6 +40,7 @@ import njtech.nanjing.com.core.utils.DialogUtils;
 public class MaterialDialog extends DialogBase implements View.OnClickListener {
 
     protected final Builder builder;
+    private Handler mHandler;
     protected ImageView icon;
     protected TextView title;
     protected View titleFrame;
@@ -42,11 +48,15 @@ public class MaterialDialog extends DialogBase implements View.OnClickListener {
     MDButton positiveButton;
     MDButton neutralButton;
     MDButton negativeButton;
+    ProgressBar progressBar;
+    TextView progressLable;
+    TextView progressMinMax;
 
     FrameLayout customViewFrame;
 
     protected MaterialDialog(Builder builder) {
         super(builder.context, DialogInit.getTheme(builder));
+        mHandler = new Handler();
         this.builder = builder;
         LayoutInflater inflater = LayoutInflater.from(builder.context);
         view = (MDRootLayout) inflater.inflate(DialogInit.getInflateLayout(builder), null);
@@ -124,6 +134,60 @@ public class MaterialDialog extends DialogBase implements View.OnClickListener {
         setContent(builder.context.getString(contentId, formatArgs));
     }
 
+    public ProgressBar getProgressBar() {
+        return progressBar;
+    }
+
+    public final int getCurrentProgress() {
+        if (progressBar != null) {
+            return progressBar.getProgress();
+        }
+        return -1;
+    }
+
+    public final int getMaxProgress() {
+        if (progressBar != null) {
+            return progressBar.getMax();
+        }
+        return -1;
+    }
+
+    public final void incrementProgress(final int by) {
+        setProgress(getCurrentProgress() + by);
+    }
+
+    public final void setProgress(final int progress) {
+        if (builder.progress <= -2) {
+            Log.w("Material", "Using setProgress() has no effect on a indeterminate dialog");
+            return;
+        }
+        progressBar.setProgress(progress);
+        mHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                if (progressLable != null) {
+                    progressLable.setText(builder.progressPercentFormat.format((float) getCurrentProgress() / (float) builder.progressMax));
+                }
+                if (progressMinMax != null) {
+                    progressMinMax.setText(String.format(builder.progressNumberFormat, getCurrentProgress(), builder.progressMax));
+                }
+            }
+        });
+    }
+
+    @SuppressWarnings("unused")
+    public final void setProgressPercentFormat(NumberFormat numberFormat) {
+        builder.progressPercentFormat = numberFormat;
+        setProgress(getCurrentProgress());
+    }
+
+    @SuppressWarnings("unused")
+    public final void setProgressNumberFormat(String numberFormat) {
+        builder.progressNumberFormat = numberFormat;
+        setProgress(getCurrentProgress());
+    }
+
+
     @Override
     public void onClick(View v) {
         DialogAction tag = (DialogAction) v.getTag();
@@ -132,23 +196,23 @@ public class MaterialDialog extends DialogBase implements View.OnClickListener {
                 if (builder.onPositiveCallback != null) {
                     builder.onPositiveCallback.onClick(this, tag);
                 }
-                if (builder.autoDismiss){
+                if (builder.autoDismiss) {
                     dismiss();
                 }
                 break;
             case NEUTRAL:
-                if (builder.onNeutralCallback != null){
-                    builder.onNeutralCallback.onClick(this,tag);
+                if (builder.onNeutralCallback != null) {
+                    builder.onNeutralCallback.onClick(this, tag);
                 }
-                if (builder.autoDismiss){
+                if (builder.autoDismiss) {
                     dismiss();
                 }
                 break;
             case NEGATIVE:
-                if (builder.onNegativeCallback != null){
-                    builder.onNegativeCallback.onClick(this,tag);
+                if (builder.onNegativeCallback != null) {
+                    builder.onNegativeCallback.onClick(this, tag);
                 }
-                if (builder.autoDismiss){
+                if (builder.autoDismiss) {
                     cancel();
                 }
                 break;
@@ -224,6 +288,10 @@ public class MaterialDialog extends DialogBase implements View.OnClickListener {
         }
     }
 
+    public final boolean isCanceled() {
+        return !isShowing();
+    }
+
 
     public interface SingleButtonCallback {
         void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which);
@@ -232,6 +300,7 @@ public class MaterialDialog extends DialogBase implements View.OnClickListener {
     /**
      * 创建MaterialDialog
      */
+    @SuppressWarnings({"WeakerAccess", "unused"})
     public static class Builder {
         protected final Context context;
         protected int widgetColor;
@@ -278,12 +347,18 @@ public class MaterialDialog extends DialogBase implements View.OnClickListener {
         protected OnCancelListener onCancelListener;
         protected OnDismissListener onDismissListener;
         protected OnKeyListener onKeyListener;
-
         protected boolean autoDismiss = true;
         protected SingleButtonCallback onPositiveCallback;
         protected SingleButtonCallback onNeutralCallback;
         protected SingleButtonCallback onNegativeCallback;
         protected SingleButtonCallback onAnyCallback;
+        protected int progress = -2;
+        protected int progressMax = 0;
+        protected boolean indeterminateProgress;
+        protected boolean indeterminateIsHorizontalProgress;
+        protected boolean showMinMax;
+        protected NumberFormat progressPercentFormat;
+        protected String progressNumberFormat;
 
         @DrawableRes
         protected int btnSelectorStacked;
@@ -316,6 +391,10 @@ public class MaterialDialog extends DialogBase implements View.OnClickListener {
             this.buttonRippleColor = DialogUtils.resolveColor(context, R.attr
                     .md_btn_ripple_color, DialogUtils.resolveColor(context, R.attr
                     .colorControlHighlight, fallback));
+
+            //progressbar percent format
+            this.progressPercentFormat = NumberFormat.getPercentInstance();
+            this.progressNumberFormat = "%1d/%2d";
 
             //setup the default theme based on Activity theme's primary color darkness(more white or more black)
             final int primaryTextColor = DialogUtils.resolveColor(context, android.R.attr.textColorPrimary);
@@ -703,6 +782,8 @@ public class MaterialDialog extends DialogBase implements View.OnClickListener {
         public Builder customView(@NonNull View view, boolean wrapInScrollView) {
             if (this.content != null) {
                 throw new IllegalStateException("You cannot use customView() when you have content set.");
+            } else if (this.progress > -2 || this.indeterminateProgress) {
+                throw new IllegalStateException("You cannot use customView() with a dialog progress");
             }
             if (view.getParent() != null && view.getParent() instanceof ViewGroup) {
                 ((ViewGroup) view.getParent()).removeView(view);
@@ -725,6 +806,69 @@ public class MaterialDialog extends DialogBase implements View.OnClickListener {
 
         public Builder autoDismiss(boolean autoDismiss) {
             this.autoDismiss = autoDismiss;
+            return this;
+        }
+
+        /**
+         * make this dialog a progress bar
+         *
+         * @param indeterminate true:circul spinner,  false:a horizontal progress bar
+         * @param progressMax   indeterminate=false时进度条最大值
+         * @return
+         */
+        public Builder progress(boolean indeterminate, int progressMax) {
+            if (this.customView != null) {
+                throw new IllegalStateException("You cannot set progress() when you're using customView");
+            }
+            if (indeterminate) {
+                this.indeterminateProgress = true;
+                this.progress = -2;
+            } else {
+                this.indeterminateIsHorizontalProgress = false;
+                this.indeterminateProgress = false;
+                this.progress = -1;
+                this.progressMax = progressMax;
+            }
+            return this;
+        }
+
+        /**
+         * 决定progress的显示模式，唯一设置的地方
+         *
+         * @param indeterminate
+         * @param progressMax
+         * @param showMinMax
+         * @return
+         */
+        public Builder progress(boolean indeterminate, int progressMax, boolean showMinMax) {
+            this.showMinMax = showMinMax;
+            return progress(indeterminate, progressMax);
+        }
+
+        /**
+         * 用于显示普通progress的百分比进度
+         *
+         * @param progressPercentFormat
+         * @return
+         */
+        public Builder progressPercentFormat(@NonNull NumberFormat progressPercentFormat) {
+            this.progressPercentFormat = progressPercentFormat;
+            return this;
+        }
+
+        /**
+         * 用于显示普通progress的最小/最大值标签
+         *
+         * @param progressNumberFormat
+         * @return
+         */
+        public Builder progressNumberFormat(@NonNull String progressNumberFormat) {
+            this.progressNumberFormat = progressNumberFormat;
+            return this;
+        }
+
+        public Builder progressIndeterminateStyle(boolean isHorizontal) {
+            this.indeterminateIsHorizontalProgress = isHorizontal;
             return this;
         }
 

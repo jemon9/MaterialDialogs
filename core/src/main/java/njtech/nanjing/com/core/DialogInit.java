@@ -17,9 +17,13 @@ import android.view.WindowManager;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
+import me.zhanghai.android.materialprogressbar.HorizontalProgressDrawable;
+import me.zhanghai.android.materialprogressbar.IndeterminateCircularProgressDrawable;
+import me.zhanghai.android.materialprogressbar.IndeterminateHorizontalProgressDrawable;
 import njtech.nanjing.com.core.internal.MDButton;
 import njtech.nanjing.com.core.internal.MDRootLayout;
 import njtech.nanjing.com.core.utils.DialogUtils;
@@ -38,7 +42,7 @@ public class DialogInit {
      */
     @StyleRes
     static int getTheme(@NonNull MaterialDialog.Builder builder) {
-        boolean darkTheme = DialogUtils.resolveBoolean(builder.context,R.attr.md_dark_theme,builder.theme == Theme.DARK);
+        boolean darkTheme = DialogUtils.resolveBoolean(builder.context, R.attr.md_dark_theme, builder.theme == Theme.DARK);
         builder.theme = darkTheme ? Theme.DARK : Theme.LIGHT;
         return darkTheme ? R.style.MD_Dark : R.style.MD_Light;
     }
@@ -53,6 +57,13 @@ public class DialogInit {
     static int getInflateLayout(@NonNull MaterialDialog.Builder builder) {
         if (builder.customView != null) {
             return R.layout.md_dialog_custom;
+        } else if (builder.progress > -2) {
+            return R.layout.md_dialog_progress;
+        } else if (builder.indeterminateProgress) {
+            if (builder.indeterminateIsHorizontalProgress) {
+                return R.layout.md_dialog_progress_indeterminate_horizontal;
+            }
+            return R.layout.md_dialog_progress_indeterminate;
         } else {
             return R.layout.md_dialog_basic;
         }
@@ -248,6 +259,10 @@ public class DialogInit {
         negativeTextView.setOnClickListener(dialog);
         negativeTextView.setVisibility(View.VISIBLE);
 
+
+        //setup progress dialog stuff if needed
+        setupProgressDialog(dialog);
+
         //setup custom view
         if (builder.customView != null) {
             ((MDRootLayout) dialog.findViewById(R.id.root)).setNoTitleNoPadding();
@@ -312,5 +327,70 @@ public class DialogInit {
         lp.copyFrom(dialog.getWindow().getAttributes());
         lp.width = Math.min(maxWidth, calculatedWidth);
         dialog.getWindow().setAttributes(lp);
+    }
+
+    private static void setupProgressDialog(final MaterialDialog dialog) {
+        final MaterialDialog.Builder builder = dialog.builder;
+        if (builder.indeterminateProgress || builder.progress > -2) {
+            dialog.progressBar = (ProgressBar) dialog.findViewById(android.R.id.progress);
+            if (dialog.progressBar == null) {
+                return;
+            }
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH) {
+                if (builder.indeterminateProgress) {
+                    if (builder.indeterminateIsHorizontalProgress) {
+                        //水平、循环、类似于google的进度条
+                        IndeterminateHorizontalProgressDrawable d = new IndeterminateHorizontalProgressDrawable(builder.getContext());
+                        d.setTint(builder.widgetColor);
+                        dialog.progressBar.setProgressDrawable(d);
+                        dialog.progressBar.setIndeterminateDrawable(d);
+                    } else {
+                        //转圆圈
+                        IndeterminateCircularProgressDrawable d = new IndeterminateCircularProgressDrawable(builder.getContext());
+                        d.setTint(builder.widgetColor);
+                        dialog.progressBar.setProgressDrawable(d);
+                        dialog.progressBar.setIndeterminateDrawable(d);
+                    }
+                } else {
+                    //水平、普通的进度条
+                    HorizontalProgressDrawable d = new HorizontalProgressDrawable(builder.getContext());
+                    d.setTint(builder.widgetColor);
+                    dialog.progressBar.setProgressDrawable(d);
+                    dialog.progressBar.setIndeterminateDrawable(d);
+                }
+            } else {
+
+            }
+
+            if (!builder.indeterminateProgress || builder.indeterminateIsHorizontalProgress) {
+                //水平、循环、类似于google的进度条和水平、普通的进度条
+                dialog.progressBar.setIndeterminate(builder.indeterminateProgress && builder.indeterminateIsHorizontalProgress);
+                dialog.progressBar.setProgress(0);
+                dialog.progressBar.setMax(builder.progressMax);
+                dialog.progressLable = (TextView) dialog.findViewById(R.id.md_label);
+                if (dialog.progressLable != null) {
+                    dialog.progressLable.setTextColor(builder.contentColor);
+                    dialog.progressLable.setText(builder.progressPercentFormat.format(0));
+                }
+                dialog.progressMinMax = (TextView) dialog.findViewById(R.id.md_minMax);
+                if (dialog.progressMinMax != null) {
+                    dialog.progressMinMax.setTextColor(builder.contentColor);
+                    if (builder.showMinMax) {
+                        dialog.progressMinMax.setVisibility(View.VISIBLE);
+                        dialog.progressMinMax.setText(String.format(builder.progressNumberFormat, 0, builder.progressMax));
+                        ViewGroup.MarginLayoutParams lp = (ViewGroup.MarginLayoutParams) dialog.progressBar.getLayoutParams();
+                        lp.leftMargin = 0;
+                        lp.rightMargin = 0;
+                    } else {
+                        dialog.progressMinMax.setVisibility(View.GONE);
+                    }
+                } else {
+                    builder.showMinMax = false;
+                }
+            } else {
+                //转圆圈
+            }
+        }
     }
 }
