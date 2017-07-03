@@ -217,6 +217,9 @@ public class MaterialDialog extends DialogBase implements View.OnClickListener {
                 }
                 break;
         }
+        if (builder.onAnyCallback != null) {
+            builder.onAnyCallback.onClick(this, tag);
+        }
     }
 
     /**

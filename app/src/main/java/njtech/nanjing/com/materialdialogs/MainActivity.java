@@ -1,6 +1,8 @@
 package njtech.nanjing.com.materialdialogs;
 
 import android.content.DialogInterface;
+import android.graphics.Color;
+import android.graphics.drawable.Drawable;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -49,6 +51,12 @@ public class MainActivity extends AppCompatActivity {
                 .iconRes(R.mipmap.ic_launcher_round)
                 .title("Title")
                 .contentRes(R.string.long_input)
+                .onAny(new MaterialDialog.SingleButtonCallback() {
+                    @Override
+                    public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
+                        Toast.makeText(dialog.getContext(), "HAHAH", Toast.LENGTH_SHORT).show();
+                    }
+                })
                 .negativeTextRes(R.string.dialog_cancel)
                 .positiveTextRes(R.string.dialog_ok)
                 .show();
@@ -57,7 +65,7 @@ public class MainActivity extends AppCompatActivity {
     public void btn2Click(View view) {
         new MaterialDialog.Builder(this).title("Progress Dialog")
                 .content("Please wait....")
-                .progress(true, 100, true)
+                .progress(false, 100, true)
                 .progressIndeterminateStyle(true)
                 .onCancelListener(new DialogInterface.OnCancelListener() {
                     @Override

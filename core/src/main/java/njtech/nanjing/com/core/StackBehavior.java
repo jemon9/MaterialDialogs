@@ -9,6 +9,6 @@ package njtech.nanjing.com.core;
  */
 public enum StackBehavior {
     ALWAYS,
-    ADAPTIVE,
+    ADAPTIVE,  //按需
     NEVER    //不显示按钮
 }
