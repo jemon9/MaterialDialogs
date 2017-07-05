@@ -9,6 +9,8 @@ import android.support.annotation.LayoutRes;
 import android.support.annotation.NonNull;
 import android.support.annotation.StyleRes;
 import android.support.annotation.UiThread;
+import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.SimpleItemAnimator;
 import android.text.method.LinkMovementMethod;
 import android.view.Display;
 import android.view.View;
@@ -21,9 +23,13 @@ import android.widget.ProgressBar;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+
 import me.zhanghai.android.materialprogressbar.HorizontalProgressDrawable;
 import me.zhanghai.android.materialprogressbar.IndeterminateCircularProgressDrawable;
 import me.zhanghai.android.materialprogressbar.IndeterminateHorizontalProgressDrawable;
+import njtech.nanjing.com.core.internal.MDAdapter;
 import njtech.nanjing.com.core.internal.MDButton;
 import njtech.nanjing.com.core.internal.MDRootLayout;
 import njtech.nanjing.com.core.utils.DialogUtils;
@@ -57,6 +63,11 @@ public class DialogInit {
     static int getInflateLayout(@NonNull MaterialDialog.Builder builder) {
         if (builder.customView != null) {
             return R.layout.md_dialog_custom;
+        } else if (builder.items != null || builder.adapter != null) {
+            if (builder.checkBoxPrompt != null) {
+                return R.layout.md_dialog_list_checkbox;
+            }
+            return R.layout.md_dialog_list;
         } else if (builder.progress > -2) {
             return R.layout.md_dialog_progress;
         } else if (builder.indeterminateProgress) {
@@ -115,12 +126,16 @@ public class DialogInit {
             final int contentColorFallback = DialogUtils.resolveColor(dialog.getContext(), android.R.attr.textColorSecondary);
             builder.contentColor = DialogUtils.resolveColor(builder.context, R.attr.md_content_color, contentColorFallback);
         }
+        if (!builder.itemsColorSet){
+            builder.itemsColor = DialogUtils.resolveColor(builder.context,R.attr.md_item_color,builder.contentColor);
+        }
 
         //retrieve references to views
         dialog.title = (TextView) dialog.findViewById(R.id.md_title);
         dialog.titleFrame = dialog.findViewById(R.id.md_titleFrame);
         dialog.icon = (ImageView) dialog.findViewById(R.id.md_icon);
         dialog.content = (TextView) dialog.findViewById(R.id.md_content);
+        dialog.recyclerView = (RecyclerView) dialog.findViewById(R.id.md_contentRecyclerView);
 
         //retrieve dialog's buttons
         dialog.positiveButton = (MDButton) dialog.findViewById(R.id.md_buttonDefaultPositive);
@@ -259,6 +274,32 @@ public class DialogInit {
         negativeTextView.setOnClickListener(dialog);
         negativeTextView.setVisibility(View.VISIBLE);
 
+        if (builder.listCallbackMultiChoice != null){
+            dialog.selectedIndicesList = new ArrayList<>();
+        }
+
+        //setup recyclerview and listType
+        if (dialog.recyclerView != null){
+            if (builder.adapter == null){
+                if (builder.listCallbackSingleChoice != null){
+                    dialog.listType = MaterialDialog.ListType.SINGLE;
+                }else if (builder.listCallbackMultiChoice != null){
+                    dialog.listType = MaterialDialog.ListType.MULTI;
+                    if (builder.selectedIndices != null){
+                        dialog.selectedIndicesList = new ArrayList<>(Arrays.asList(builder.selectedIndices));
+                        builder.selectedIndices = null;
+                    }
+                }else {
+                    dialog.listType = MaterialDialog.ListType.REGULAR;
+                }
+                builder.adapter = new DefaultRVAdapter(dialog,MaterialDialog.ListType.getLayoutForListType(dialog.listType));
+            }else if (builder.adapter instanceof MDAdapter){
+                ((MDAdapter)builder.adapter).setDialog(dialog);
+            }
+
+            ((SimpleItemAnimator)dialog.recyclerView.getItemAnimator()).setSupportsChangeAnimations(false);
+        }
+
 
         //setup progress dialog stuff if needed
         setupProgressDialog(dialog);
@@ -309,7 +350,9 @@ public class DialogInit {
         dialog.setOnShowListenerInternal();
 
         //setup other internal init
+        dialog.invalidateList();
         dialog.setViewInternal(dialog.view);
+        dialog.checkIfListInitScroll();
 
         //setup min height and max width calculations
         WindowManager wm = dialog.getWindow().getWindowManager();

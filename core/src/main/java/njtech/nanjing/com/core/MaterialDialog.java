@@ -5,6 +5,7 @@ import android.content.res.ColorStateList;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Handler;
+import android.support.annotation.ArrayRes;
 import android.support.annotation.AttrRes;
 import android.support.annotation.ColorInt;
 import android.support.annotation.ColorRes;
@@ -15,18 +16,30 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.annotation.StringRes;
 import android.support.annotation.UiThread;
+import android.support.v4.content.ContextCompat;
 import android.support.v4.content.res.ResourcesCompat;
+import android.support.v4.graphics.drawable.DrawableCompat;
+import android.support.v7.widget.GridLayoutManager;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
+import android.widget.CheckBox;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
+import android.widget.RadioButton;
 import android.widget.TextView;
 
 import java.text.NumberFormat;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 
 import njtech.nanjing.com.core.internal.MDButton;
 import njtech.nanjing.com.core.internal.MDRootLayout;
@@ -37,7 +50,7 @@ import njtech.nanjing.com.core.utils.DialogUtils;
  * Created by 张志付 on 2017/6/24.
  */
 
-public class MaterialDialog extends DialogBase implements View.OnClickListener {
+public class MaterialDialog extends DialogBase implements View.OnClickListener, DefaultRVAdapter.InternalListCallback {
 
     protected final Builder builder;
     private Handler mHandler;
@@ -45,14 +58,261 @@ public class MaterialDialog extends DialogBase implements View.OnClickListener {
     protected TextView title;
     protected View titleFrame;
     protected TextView content;
+    ListType listType;
+    List<Integer> selectedIndicesList;
     MDButton positiveButton;
     MDButton neutralButton;
     MDButton negativeButton;
     ProgressBar progressBar;
     TextView progressLable;
     TextView progressMinMax;
-
+    RecyclerView recyclerView;
     FrameLayout customViewFrame;
+
+    public Drawable getListSelector() {
+        if (builder.listSelector != 0) {
+            return ResourcesCompat.getDrawable(builder.getContext().getResources(), builder.listSelector, null);
+        }
+        final Drawable d = DialogUtils.resolveDrawable(builder.context, R.attr.md_list_selector);
+        if (d != null) {
+            return d;
+        }
+        return DialogUtils.resolveDrawable(getContext(), R.attr.md_list_selector);
+    }
+
+    /**
+     * set the dialog RecyclerView's adapter/layout manager and it's item click listener
+     */
+    final void invalidateList() {
+        if (recyclerView == null) {
+            return;
+        } else if (builder.items == null || builder.items.size() == 0 || builder.adapter == null) {
+            return;
+        }
+        if (builder.layoutManager == null) {
+            builder.layoutManager = new LinearLayoutManager(getContext());
+        }
+        if (recyclerView.getLayoutManager() == null) {
+            recyclerView.setLayoutManager(builder.layoutManager);
+        }
+        recyclerView.setAdapter(builder.adapter);
+        if (listType != null) {
+            ((DefaultRVAdapter) builder.adapter).setCallback(this);
+        }
+    }
+
+    /**
+     * 响应listview的点击事件
+     *
+     * @param dialog
+     * @param itemView
+     * @param position
+     * @param text
+     * @param longPress
+     * @return
+     */
+    @Override
+    public boolean onItemSelected(MaterialDialog dialog, View itemView, int position, CharSequence text, boolean longPress) {
+        if (!itemView.isEnabled()) {
+            return false;
+        }
+        if (listType == null || listType == ListType.REGULAR) {
+            if (builder.autoDismiss) {
+                dismiss();
+            }
+            if (!longPress && builder.listCallback != null) {
+                builder.listCallback.onSelection(this, itemView, position, text);
+            }
+            if (longPress && builder.listLongCallback != null) {
+                return builder.listLongCallback.onLongSelection(dialog, itemView, position, text);
+            }
+        } else {
+            // TODO: 2017/7/5 list single choice and multi choice 需要研究原理
+            if (listType == ListType.MULTI){
+                final CheckBox checkBox = (CheckBox) itemView.findViewById(R.id.md_control);
+                if (!checkBox.isEnabled()) {
+                    return false;
+                }
+                final boolean shouldBeChecked = !selectedIndicesList.contains(position);
+                if (shouldBeChecked) {
+                    selectedIndicesList.add(position);
+                    if (builder.alwaysCallMultiChoiceCallback) {
+                        if (sendMultiChoiceCallback()) {
+                            checkBox.setChecked(true);
+                        } else {
+                            selectedIndicesList.remove(Integer.valueOf(position));
+                        }
+                    } else {
+                        checkBox.setChecked(true);
+                    }
+                } else {
+                    selectedIndicesList.remove(Integer.valueOf(position));
+                    if (builder.alwaysCallMultiChoiceCallback) {
+                        if (sendMultiChoiceCallback()) {
+                            checkBox.setChecked(false);
+                        } else {
+                            selectedIndicesList.add(position);
+                        }
+                    } else {
+                        checkBox.setChecked(false);
+                    }
+                }
+            }else if (listType == ListType.SINGLE){
+                final RadioButton radio = (RadioButton) itemView.findViewById(R.id.md_control);
+                if (!radio.isEnabled()) {
+                    return false;
+                }
+                boolean allowSelection = true;
+                final int oldSelected = builder.selectedIndex;
+                if (builder.autoDismiss && builder.positiveText == null) {
+                    dismiss();
+                    allowSelection = false;
+                    builder.selectedIndex = position;
+                    sendSingleChoiceCallback(itemView);
+                } else if (builder.alwaysCallSingleChoiceCallback) {
+                    builder.selectedIndex = position;
+                    allowSelection = sendSingleChoiceCallback(itemView);
+                    builder.selectedIndex = oldSelected;
+                }
+                if (allowSelection) {
+                    builder.selectedIndex = position;
+                    radio.setChecked(true);
+                    builder.adapter.notifyItemChanged(oldSelected);
+                    builder.adapter.notifyItemChanged(position);
+                }
+            }
+        }
+        return true;
+    }
+
+    private boolean sendMultiChoiceCallback() {
+        if (builder.listCallbackMultiChoice == null) {
+            return false;
+        }
+        Collections.sort(selectedIndicesList);//make sure the indices in order
+        CharSequence[] texts = null;
+        int i = 0;
+        for (Integer inte : selectedIndicesList) {
+            texts[i++] = builder.items.get(inte);
+        }
+        return builder.listCallbackMultiChoice.onSelection(this, selectedIndicesList.toArray(new Integer[selectedIndicesList.size()]), texts);
+    }
+
+    /**
+     * 设置recyclerview singlechoice回调
+     *
+     * @param itemView
+     * @return
+     */
+    private boolean sendSingleChoiceCallback(View itemView) {
+        if (builder.listCallbackSingleChoice == null) {
+            return false;
+        }
+        CharSequence text = null;
+        if (builder.selectedIndex >= 0 && builder.selectedIndex < builder.items.size()) {
+            text = builder.items.get(builder.selectedIndex);
+        }
+        return builder.listCallbackSingleChoice.onSelection(this, itemView, builder.selectedIndex, text);
+    }
+
+    /**
+     * recyclerview初始化时所在的位置
+     */
+    final void checkIfListInitScroll() {
+        if (recyclerView == null) {
+            return;
+        }
+        recyclerView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+            @Override
+            public void onGlobalLayout() {
+                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN) {
+                    recyclerView.getViewTreeObserver().removeGlobalOnLayoutListener(this);
+                } else {
+                    recyclerView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+                }
+                if (listType == ListType.SINGLE || listType == ListType.MULTI) {
+                    int selectedIndex;
+                    if (listType == ListType.SINGLE) {
+                        if (builder.selectedIndex < 0) {
+                            return;
+                        }
+                        selectedIndex = builder.selectedIndex;
+                    } else {
+                        if (selectedIndicesList == null || selectedIndicesList.size() == 0) {
+                            return;
+                        }
+                        Collections.sort(selectedIndicesList);
+                        selectedIndex = selectedIndicesList.get(0);
+                    }
+                    final int fselectedIndex = selectedIndex;
+                    recyclerView.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            recyclerView.requestFocus();
+                            builder.layoutManager.scrollToPosition(fselectedIndex);
+                        }
+                    });
+                }
+            }
+        });
+    }
+
+    public interface SingleButtonCallback {
+        void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which);
+    }
+
+    /**
+     * A callback for regular dialog list
+     */
+    public interface ListCallback {
+        void onSelection(MaterialDialog dialog, View itemView, int position, CharSequence text);
+    }
+
+    /**
+     * A callback for regular dialog list
+     */
+    public interface ListLongCallback {
+        boolean onLongSelection(MaterialDialog dialog, View itemView, int position, CharSequence text);
+    }
+
+    /**
+     * A callback for multi choice(check box) dialog list
+     */
+    public interface ListCallbackSingleChoice {
+        boolean onSelection(MaterialDialog dialog, View itemView, int which, CharSequence text);
+    }
+
+    /**
+     * A callback for multi choice dialog list
+     */
+    public interface ListCallbackMultiChoice {
+        boolean onSelection(MaterialDialog dialog, Integer[] which, CharSequence[] texts);
+    }
+
+    enum ListType {
+        REGULAR,
+        SINGLE,
+        MULTI;
+
+        /**
+         * 根据ListType类型获取list item的布局文件
+         *
+         * @param listType
+         * @return
+         */
+        public static int getLayoutForListType(ListType listType) {
+            switch (listType) {
+                case REGULAR:
+                    return R.layout.md_listitem;
+                case SINGLE:
+                    return R.layout.md_listitem_single;
+                case MULTI:
+                    return R.layout.md_listitem_multi;
+                default:
+                    throw new IllegalStateException("invalidate list type");
+            }
+        }
+    }
 
     protected MaterialDialog(Builder builder) {
         super(builder.context, DialogInit.getTheme(builder));
@@ -81,6 +341,14 @@ public class MaterialDialog extends DialogBase implements View.OnClickListener {
 
     public final View getCustomView() {
         return builder.customView;
+    }
+
+    public final RecyclerView getRecyclerView() {
+        return recyclerView;
+    }
+
+    public final Builder getBuilder() {
+        return builder;
     }
 
     @UiThread
@@ -196,6 +464,12 @@ public class MaterialDialog extends DialogBase implements View.OnClickListener {
                 if (builder.onPositiveCallback != null) {
                     builder.onPositiveCallback.onClick(this, tag);
                 }
+                if (!builder.alwaysCallSingleChoiceCallback){
+                    sendSingleChoiceCallback(v);
+                }
+                if (!builder.alwaysCallMultiChoiceCallback){
+                    sendMultiChoiceCallback();
+                }
                 if (builder.autoDismiss) {
                     dismiss();
                 }
@@ -296,10 +570,6 @@ public class MaterialDialog extends DialogBase implements View.OnClickListener {
     }
 
 
-    public interface SingleButtonCallback {
-        void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which);
-    }
-
     /**
      * 创建MaterialDialog
      */
@@ -362,6 +632,25 @@ public class MaterialDialog extends DialogBase implements View.OnClickListener {
         protected boolean showMinMax;
         protected NumberFormat progressPercentFormat;
         protected String progressNumberFormat;
+        protected ArrayList<CharSequence> items;
+        protected RecyclerView.Adapter<?> adapter;
+        protected RecyclerView.LayoutManager layoutManager;
+        protected int itemsColor;
+        protected boolean itemsColorSet = false;
+        protected int[] itemsIds;
+        protected ListCallback listCallback;
+        protected ListLongCallback listLongCallback;
+        protected ListCallbackSingleChoice listCallbackSingleChoice;
+        protected ListCallbackMultiChoice listCallbackMultiChoice;
+        protected CharSequence checkBoxPrompt;
+        protected int selectedIndex = -1;
+        protected Integer[] selectedIndices = null;
+        protected Integer[] disabledIndices = null;
+        protected boolean alwaysCallSingleChoiceCallback = false;
+        protected boolean alwaysCallMultiChoiceCallback = false;
+
+        @DrawableRes
+        protected int listSelector;
 
         @DrawableRes
         protected int btnSelectorStacked;
@@ -460,6 +749,9 @@ public class MaterialDialog extends DialogBase implements View.OnClickListener {
             }
             if (ts.btnSelectorNegative != 0) {
                 this.btnSelectorNegative = ts.btnSelectorNegative;
+            }
+            if (ts.listSelector != 0) {
+                this.listSelector = ts.listSelector;
             }
             if (ts.widgetColor != 0) {
                 this.widgetColor = ts.widgetColor;
@@ -785,6 +1077,8 @@ public class MaterialDialog extends DialogBase implements View.OnClickListener {
         public Builder customView(@NonNull View view, boolean wrapInScrollView) {
             if (this.content != null) {
                 throw new IllegalStateException("You cannot use customView() when you have content set.");
+            } else if (this.items != null) {
+                throw new IllegalStateException("You cannot use customView() when you have items set.");
             } else if (this.progress > -2 || this.indeterminateProgress) {
                 throw new IllegalStateException("You cannot use customView() with a dialog progress");
             }
@@ -874,6 +1168,141 @@ public class MaterialDialog extends DialogBase implements View.OnClickListener {
             this.indeterminateIsHorizontalProgress = isHorizontal;
             return this;
         }
+
+
+        /*
+        start items (listview recyclerview)
+         */
+        public Builder items(@NonNull Collection collection) {
+            if (collection.size() > 0) {
+                final CharSequence[] array = new CharSequence[collection.size()];
+                int i = 0;
+                for (Object obj : collection) {
+                    array[i] = obj.toString();
+                    i++;
+                }
+                items(array);
+            } else if (collection.size() == 0) {
+                items = new ArrayList<>();
+            }
+            return this;
+        }
+
+        public Builder items(@NonNull CharSequence... array) {
+            if (this.customView != null) {
+                throw new IllegalStateException("You cannot use items() when you have customView set.");
+            }
+            this.items = new ArrayList<>();
+            Collections.addAll(this.items, array);
+            return this;
+        }
+
+        public Builder itemsRes(@ArrayRes int itemsRes) {
+            return items(this.context.getResources().getTextArray(itemsRes));
+        }
+
+        public Builder itemsColor(@ColorInt int itemColor) {
+            this.itemsColor = itemColor;
+            this.itemsColorSet = true;
+            return this;
+        }
+
+        public Builder itemsColorRes(@ColorRes int itemsColorRes) {
+            return itemsColor(DialogUtils.getColor(this.context, itemsColorRes));
+        }
+
+        public Builder itemsColorAttr(@AttrRes int itemsColorAttr) {
+            return itemsColor(DialogUtils.resolveColor(this.context, itemsColorAttr));
+        }
+
+        public Builder itemsGravity(GravityEnum gravityEnum) {
+            this.itemsGravity = gravityEnum;
+            return this;
+        }
+
+        public Builder itemsIds(@NonNull int[] itemsIds) {
+            this.itemsIds = itemsIds;
+            return this;
+        }
+
+        public Builder itemsIdsRes(@ArrayRes int itemsIdsRes) {
+            return itemsIds(this.context.getResources().getIntArray(itemsIdsRes));
+        }
+
+        public Builder itemsCallback(@NonNull ListCallback listCallback) {
+            this.listCallback = listCallback;
+            this.listCallbackSingleChoice = null;
+            this.listCallbackMultiChoice = null;
+            return this;
+        }
+
+        public Builder itemsLongCallback(@NonNull ListLongCallback listLongCallback) {
+            this.listLongCallback = listLongCallback;
+            this.listCallbackSingleChoice = null;
+            this.listCallbackMultiChoice = null;
+            return this;
+        }
+
+        /**
+         * pass anything below 0(such as -f) for the selected index to leave all options unselected initially.
+         * Otherwise pass the index of an item that will be selected initially.
+         *
+         * @param selectedIndex
+         * @param listCallbackSingleChoice
+         * @return
+         */
+        public Builder itemsCallbackSingleChoice(int selectedIndex, @NonNull ListCallbackSingleChoice listCallbackSingleChoice) {
+            this.selectedIndex = selectedIndex;
+            this.listCallback = null;
+            this.listCallbackSingleChoice = listCallbackSingleChoice;
+            this.listCallbackMultiChoice = null;
+            return this;
+        }
+
+        public Builder itemsCallbackMultiChoice(@Nullable Integer[] selectedIndices, @NonNull ListCallbackMultiChoice listCallbackMultiChoice) {
+            this.selectedIndices = selectedIndices;
+            this.listCallback = null;
+            this.listCallbackSingleChoice = null;
+            this.listCallbackMultiChoice = listCallbackMultiChoice;
+            return this;
+        }
+
+        public Builder itemsDisabledIndices(@Nullable Integer... integers) {
+            this.disabledIndices = integers;
+            return this;
+        }
+
+        public Builder listSelector(@DrawableRes int listSelectorRes) {
+            this.listSelector = listSelectorRes;
+            return this;
+        }
+
+        public Builder alwaysCallSingleChoiceCallback() {
+            this.alwaysCallSingleChoiceCallback = true;
+            return this;
+        }
+
+        public Builder alwaysCallMultiChoiceCallback() {
+            this.alwaysCallMultiChoiceCallback = true;
+            return this;
+        }
+
+        public Builder adapter(@NonNull RecyclerView.Adapter<?> adapter, @Nullable RecyclerView.LayoutManager layoutManager) {
+            if (this.customView != null) {
+                throw new IllegalStateException("You cannot use adapter() when you're using a customView.");
+            }
+            if (layoutManager != null && !(layoutManager instanceof LinearLayoutManager) && !(layoutManager instanceof GridLayoutManager)) {
+                throw new IllegalStateException("You can currently only use LinearLayoutManager or GridLayoutManager with this library.");
+            }
+            this.adapter = adapter;
+            this.layoutManager = layoutManager;
+            return this;
+        }
+
+        /*
+        end items
+         */
+
 
         public Builder onShowListener(@NonNull OnShowListener listener) {
             this.onShowListener = listener;

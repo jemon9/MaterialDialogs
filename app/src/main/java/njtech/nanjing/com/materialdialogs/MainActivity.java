@@ -105,4 +105,38 @@ public class MainActivity extends AppCompatActivity {
                 })
                 .show();
     }
+
+    public void btn3click(View view) {
+        new MaterialDialog.Builder(this)
+                .itemsRes(R.array.socialNetworks)
+                .itemsCallback(new MaterialDialog.ListCallback() {
+                    @Override
+                    public void onSelection(MaterialDialog dialog, View itemView, int position, CharSequence text) {
+                        Toast.makeText(dialog.getContext(), "listcallback----> position:" + position + "\n" + "text:" + text, Toast.LENGTH_SHORT).show();
+                    }
+                })
+                .itemsLongCallback(new MaterialDialog.ListLongCallback() {
+                    @Override
+                    public boolean onLongSelection(MaterialDialog dialog, View itemView, int position, CharSequence text) {
+                        Toast.makeText(dialog.getContext(), "listlong callback----> position:" + position + "\n" + "text:" + text, Toast.LENGTH_SHORT).show();
+                        return false;
+                    }
+                })
+                .show();
+    }
+
+    public void btn4click(View view) {
+        new MaterialDialog.Builder(this)
+                .title("single choice")
+                .itemsRes(R.array.socialNetworks)
+                .itemsCallbackSingleChoice(2, new MaterialDialog.ListCallbackSingleChoice() {
+                    @Override
+                    public boolean onSelection(MaterialDialog dialog, View itemView, int which, CharSequence text) {
+                        Toast.makeText(dialog.getContext(),"position:" + which + "," + text,Toast.LENGTH_SHORT).show();
+                        return true;
+                    }
+                })
+                .positiveText("Choose")
+                .show();
+    }
 }

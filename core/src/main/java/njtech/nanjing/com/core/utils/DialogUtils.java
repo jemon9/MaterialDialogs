@@ -9,6 +9,8 @@ import android.os.Build;
 import android.support.annotation.AttrRes;
 import android.support.annotation.ColorInt;
 import android.support.annotation.ColorRes;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.v4.content.ContextCompat;
 import android.util.TypedValue;
 import android.view.View;
@@ -228,5 +230,24 @@ public class DialogUtils {
     public static boolean isColorDark(@ColorInt int color) {
         double darkness = 1 - (0.299 * Color.red(color) + 0.587 * Color.green(color) + 0.114 * Color.blue(color)) / 255;
         return darkness >= 0.5;
+    }
+
+    public static <T> boolean isIn(@NonNull T find, @Nullable T[] array) {
+        if (array == null || array.length == 0) {
+            return false;
+        }
+        for (T t : array) {
+            if (t.equals(find)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @ColorInt
+    public static int getDisabledColor(Context context) {
+        final int primaryColor = resolveColor(context, android.R.attr.textColorPrimary);
+        final int disabledColor = isColorDark(primaryColor) ? Color.BLACK : Color.WHITE;
+        return adjustAlpha(disabledColor, 0.3f);
     }
 }

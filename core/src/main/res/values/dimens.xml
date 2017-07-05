@@ -8,6 +8,7 @@
     <dimen name="md_neutral_button_margin">12dp</dimen>
 
     <dimen name="md_title_frame_margin_bottom">12dp</dimen>
+    <dimen name="md_title_frame_margin_bottom_less">6dp</dimen>
     <dimen name="md_dialog_frame_margin">24dp</dimen>
     <dimen name="md_icon_margin">16dp</dimen>
     <dimen name="md_title_size">20sp</dimen>
@@ -22,7 +23,7 @@
     <dimen name="md_bg_corner_radius">2dp</dimen>
     <dimen name="md_icon_max_size">48dp</dimen>
     <dimen name="md_dialog_vertical_margin">52dp</dimen>
-    <dimen name="md_dialog_horizontal_margin">48dp</dimen>
+    <dimen name="md_dialog_horizontal_margin">28dp</dimen>
     <dimen name="md_dialog_max_width">496dp</dimen>
 
     <dimen name="md_button_inset_vertical">6dp</dimen>
@@ -30,5 +31,11 @@
     <dimen name="md_action_corner_radius">2dp</dimen>
     <dimen name="md_button_padding_vertical">4dp</dimen>
     <dimen name="md_button_padding_horizontal">8dp</dimen>
+
+    <dimen name="md_listitem_height">48dp</dimen>
+    <dimen name="md_listitem_vertical_margin">12dp</dimen>
+    <dimen name="md_listitem_textsize">16sp</dimen>
+    <dimen name="md_listitem_vertical_margin_choice">8dp</dimen>
+    <dimen name="md_listitem_control_margin">6dp</dimen>
 
 </resources>

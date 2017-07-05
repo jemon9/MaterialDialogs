@@ -21,4 +21,18 @@
         android:onClick="btn2Click"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"/>
+
+    <Button
+        android:id="@+id/btn3"
+        android:onClick="btn3click"
+        android:text="Basic List(NO Title)"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
+
+    <Button
+        android:id="@+id/btn4"
+        android:onClick="btn4click"
+        android:text="base list single choice"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
 </LinearLayout>
