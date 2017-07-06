@@ -139,4 +139,34 @@ public class MainActivity extends AppCompatActivity {
                 .positiveText("Choose")
                 .show();
     }
+
+    public void btn5click(View view){
+        new MaterialDialog.Builder(this)
+                .title("multiple choice")
+                .itemsRes(R.array.socialNetworks)
+                .alwaysCallMultiChoiceCallback()
+                .itemsCallbackMultiChoice(new Integer[]{1, 3}, new MaterialDialog.ListCallbackMultiChoice() {
+                    @Override
+                    public boolean onSelection(MaterialDialog dialog, Integer[] which, CharSequence[] texts) {
+                        return true;
+                    }
+                })
+                .negativeText("cancle")
+                .onNegative(new MaterialDialog.SingleButtonCallback() {
+                    @Override
+                    public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
+                        dialog.clearSelectedIndices();
+                    }
+                })
+                .onPositive(new MaterialDialog.SingleButtonCallback() {
+                    @Override
+                    public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
+                        dialog.dismiss();
+                    }
+                })
+                .alwaysCallMultiChoiceCallback()
+                .autoDismiss(false)
+                .positiveText("Choose")
+                .show();
+    }
 }

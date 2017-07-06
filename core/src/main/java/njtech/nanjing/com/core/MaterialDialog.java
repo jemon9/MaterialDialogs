@@ -37,6 +37,7 @@ import android.widget.TextView;
 
 import java.text.NumberFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -128,7 +129,7 @@ public class MaterialDialog extends DialogBase implements View.OnClickListener, 
             }
         } else {
             // TODO: 2017/7/5 list single choice and multi choice 需要研究原理
-            if (listType == ListType.MULTI){
+            if (listType == ListType.MULTI) {
                 final CheckBox checkBox = (CheckBox) itemView.findViewById(R.id.md_control);
                 if (!checkBox.isEnabled()) {
                     return false;
@@ -157,7 +158,7 @@ public class MaterialDialog extends DialogBase implements View.OnClickListener, 
                         checkBox.setChecked(false);
                     }
                 }
-            }else if (listType == ListType.SINGLE){
+            } else if (listType == ListType.SINGLE) {
                 final RadioButton radio = (RadioButton) itemView.findViewById(R.id.md_control);
                 if (!radio.isEnabled()) {
                     return false;
@@ -190,12 +191,12 @@ public class MaterialDialog extends DialogBase implements View.OnClickListener, 
             return false;
         }
         Collections.sort(selectedIndicesList);//make sure the indices in order
-        CharSequence[] texts = null;
-        int i = 0;
+        List<CharSequence> texts = new ArrayList<>();
         for (Integer inte : selectedIndicesList) {
-            texts[i++] = builder.items.get(inte);
+            texts.add(builder.items.get(inte));
         }
-        return builder.listCallbackMultiChoice.onSelection(this, selectedIndicesList.toArray(new Integer[selectedIndicesList.size()]), texts);
+        return builder.listCallbackMultiChoice.onSelection(this, selectedIndicesList.toArray(new Integer[selectedIndicesList.size()]), texts.toArray(new
+                CharSequence[texts.size()]));
     }
 
     /**
@@ -402,6 +403,46 @@ public class MaterialDialog extends DialogBase implements View.OnClickListener, 
         setContent(builder.context.getString(contentId, formatArgs));
     }
 
+    @UiThread
+    public final Integer[] getSelectedIndices() {
+        if (builder.listCallbackMultiChoice != null) {
+            return selectedIndicesList.toArray(new Integer[selectedIndicesList.size()]);
+        } else {
+            return null;
+        }
+    }
+
+    @UiThread
+    public final void setSelectedIndices(@NonNull Integer[] indices) {
+        selectedIndicesList = new ArrayList<>(Arrays.asList(indices));
+        if (builder != null && builder.adapter instanceof DefaultRVAdapter) {
+            builder.adapter.notifyDataSetChanged();
+        } else {
+            throw new IllegalStateException("You can only use setSelectedIndices() with the default adapter implementation");
+        }
+    }
+
+    public final void clearSelectedIndices(){
+        clearSelectedIndices(true);
+    }
+
+    void clearSelectedIndices(boolean sendCallback){
+        if (listType == null || listType != ListType.MULTI){
+            throw new IllegalStateException("You cannot use clearSelectedIndices() with no multi choice list dialog.");
+        }
+        if (builder.adapter != null && builder.adapter instanceof DefaultRVAdapter){
+            if (selectedIndicesList != null){
+                selectedIndicesList.clear();
+            }
+            builder.adapter.notifyDataSetChanged();
+            if (sendCallback && builder.listCallbackMultiChoice != null){
+                sendMultiChoiceCallback();
+            }
+        }else {
+            throw new IllegalStateException("You can only use clearSelectedIndices() with the default adapter implementation.");
+        }
+    }
+
     public ProgressBar getProgressBar() {
         return progressBar;
     }
@@ -464,10 +505,10 @@ public class MaterialDialog extends DialogBase implements View.OnClickListener, 
                 if (builder.onPositiveCallback != null) {
                     builder.onPositiveCallback.onClick(this, tag);
                 }
-                if (!builder.alwaysCallSingleChoiceCallback){
+                if (!builder.alwaysCallSingleChoiceCallback) {
                     sendSingleChoiceCallback(v);
                 }
-                if (!builder.alwaysCallMultiChoiceCallback){
+                if (!builder.alwaysCallMultiChoiceCallback) {
                     sendMultiChoiceCallback();
                 }
                 if (builder.autoDismiss) {

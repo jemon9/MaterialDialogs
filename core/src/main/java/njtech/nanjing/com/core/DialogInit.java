@@ -297,6 +297,7 @@ public class DialogInit {
                 ((MDAdapter)builder.adapter).setDialog(dialog);
             }
 
+            //防止radiobutton选中时产生的跳动
             ((SimpleItemAnimator)dialog.recyclerView.getItemAnimator()).setSupportsChangeAnimations(false);
         }
 

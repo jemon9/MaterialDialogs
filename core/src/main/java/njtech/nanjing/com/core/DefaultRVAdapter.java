@@ -46,7 +46,7 @@ public class DefaultRVAdapter extends RecyclerView.Adapter<DefaultRVAdapter.Defa
 
     @Override
     public DefaultRVAdapter.DefaultVH onCreateViewHolder(ViewGroup parent, int viewType) {
-        final View view = LayoutInflater.from(parent.getContext()).inflate(this.layout, parent,false);
+        final View view = LayoutInflater.from(parent.getContext()).inflate(this.layout, parent, false);
         DialogUtils.setBackgroundCompat(view, dialog.getListSelector());
         return new DefaultVH(view, this);
     }
@@ -80,7 +80,7 @@ public class DefaultRVAdapter extends RecyclerView.Adapter<DefaultRVAdapter.Defa
                 } else {
                     MDTintHelper.setTint(checkBox, dialog.builder.widgetColor);
                 }
-                checkBox.setSelected(selected);
+                checkBox.setChecked(selected);
                 checkBox.setEnabled(!disabled);
                 break;
             }

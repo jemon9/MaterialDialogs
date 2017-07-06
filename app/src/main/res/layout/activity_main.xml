@@ -35,4 +35,11 @@
         android:text="base list single choice"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"/>
+
+    <Button
+        android:id="@+id/btn5"
+        android:onClick="btn5click"
+        android:text="base list multi choice"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
 </LinearLayout>
