@@ -124,10 +124,8 @@ public class MDRootLayout extends ViewGroup {
         if (height > maxHeight) {
             height = maxHeight;
         }
-
         useFullPadding = true;
         boolean hasButtons = false;
-
         //判断按钮是水平排放还是竖直排放 stacked:true竖直，stacked：false水平
         final boolean stacked;
         if (stackBehavior == StackBehavior.ALWAYS) {

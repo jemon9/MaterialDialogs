@@ -65,8 +65,8 @@ public class MainActivity extends AppCompatActivity {
     public void btn2Click(View view) {
         new MaterialDialog.Builder(this).title("Progress Dialog")
                 .content("Please wait....")
-                .progress(false, 100, true)
-                .progressIndeterminateStyle(true)
+                .progress(true, 100, true)
+                .progressIndeterminateStyle(false)
                 .onCancelListener(new DialogInterface.OnCancelListener() {
                     @Override
                     public void onCancel(DialogInterface dialog) {
@@ -93,6 +93,7 @@ public class MainActivity extends AppCompatActivity {
                                     }
                                     materialDialog.incrementProgress(1);
                                 }
+
                                 runOnUiThread(new Runnable() {
                                     @Override
                                     public void run() {
@@ -103,6 +104,7 @@ public class MainActivity extends AppCompatActivity {
                         });
                     }
                 })
+                .positiveText("ok")
                 .show();
     }
 
