@@ -1149,9 +1149,8 @@ public class MaterialDialog extends DialogBase implements View.OnClickListener, 
 
         /**
          * make this dialog a progress bar
-         *
          * @param indeterminate true:circul spinner,  false:a horizontal progress bar
-         * @param progressMax   indeterminate=false时进度条最大值
+         * @param progressMax   indeterminate=false时，进度条最大值
          * @return
          */
         public Builder progress(boolean indeterminate, int progressMax) {
@@ -1159,9 +1158,11 @@ public class MaterialDialog extends DialogBase implements View.OnClickListener, 
                 throw new IllegalStateException("You cannot set progress() when you're using customView");
             }
             if (indeterminate) {
+                //indeterminate progress
                 this.indeterminateProgress = true;
                 this.progress = -2;
             } else {
+                //basic progress
                 this.indeterminateIsHorizontalProgress = false;
                 this.indeterminateProgress = false;
                 this.progress = -1;

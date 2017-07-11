@@ -126,8 +126,8 @@ public class DialogInit {
             final int contentColorFallback = DialogUtils.resolveColor(dialog.getContext(), android.R.attr.textColorSecondary);
             builder.contentColor = DialogUtils.resolveColor(builder.context, R.attr.md_content_color, contentColorFallback);
         }
-        if (!builder.itemsColorSet){
-            builder.itemsColor = DialogUtils.resolveColor(builder.context,R.attr.md_item_color,builder.contentColor);
+        if (!builder.itemsColorSet) {
+            builder.itemsColor = DialogUtils.resolveColor(builder.context, R.attr.md_item_color, builder.contentColor);
         }
 
         //retrieve references to views
@@ -274,31 +274,31 @@ public class DialogInit {
         negativeTextView.setOnClickListener(dialog);
         negativeTextView.setVisibility(View.VISIBLE);
 
-        if (builder.listCallbackMultiChoice != null){
+        if (builder.listCallbackMultiChoice != null) {
             dialog.selectedIndicesList = new ArrayList<>();
         }
 
         //setup recyclerview and listType
-        if (dialog.recyclerView != null){
-            if (builder.adapter == null){
-                if (builder.listCallbackSingleChoice != null){
+        if (dialog.recyclerView != null) {
+            if (builder.adapter == null) {
+                if (builder.listCallbackSingleChoice != null) {
                     dialog.listType = MaterialDialog.ListType.SINGLE;
-                }else if (builder.listCallbackMultiChoice != null){
+                } else if (builder.listCallbackMultiChoice != null) {
                     dialog.listType = MaterialDialog.ListType.MULTI;
-                    if (builder.selectedIndices != null){
+                    if (builder.selectedIndices != null) {
                         dialog.selectedIndicesList = new ArrayList<>(Arrays.asList(builder.selectedIndices));
                         builder.selectedIndices = null;
                     }
-                }else {
+                } else {
                     dialog.listType = MaterialDialog.ListType.REGULAR;
                 }
-                builder.adapter = new DefaultRVAdapter(dialog,MaterialDialog.ListType.getLayoutForListType(dialog.listType));
-            }else if (builder.adapter instanceof MDAdapter){
-                ((MDAdapter)builder.adapter).setDialog(dialog);
+                builder.adapter = new DefaultRVAdapter(dialog, MaterialDialog.ListType.getLayoutForListType(dialog.listType));
+            } else if (builder.adapter instanceof MDAdapter) {
+                ((MDAdapter) builder.adapter).setDialog(dialog);
             }
 
             //防止radiobutton选中时产生的跳动
-            ((SimpleItemAnimator)dialog.recyclerView.getItemAnimator()).setSupportsChangeAnimations(false);
+            ((SimpleItemAnimator) dialog.recyclerView.getItemAnimator()).setSupportsChangeAnimations(false);
         }
 
 
@@ -404,7 +404,7 @@ public class DialogInit {
                     dialog.progressBar.setIndeterminateDrawable(d);
                 }
             } else {
-
+                MDTintHelper.setTint(dialog.progressBar,builder.widgetColor);
             }
 
             if (!builder.indeterminateProgress || builder.indeterminateIsHorizontalProgress) {
@@ -412,11 +412,13 @@ public class DialogInit {
                 dialog.progressBar.setIndeterminate(builder.indeterminateProgress && builder.indeterminateIsHorizontalProgress);
                 dialog.progressBar.setProgress(0);
                 dialog.progressBar.setMax(builder.progressMax);
+                //设置百分比标签
                 dialog.progressLable = (TextView) dialog.findViewById(R.id.md_label);
                 if (dialog.progressLable != null) {
                     dialog.progressLable.setTextColor(builder.contentColor);
                     dialog.progressLable.setText(builder.progressPercentFormat.format(0));
                 }
+                //设置最小/最大值标签
                 dialog.progressMinMax = (TextView) dialog.findViewById(R.id.md_minMax);
                 if (dialog.progressMinMax != null) {
                     dialog.progressMinMax.setTextColor(builder.contentColor);
@@ -432,8 +434,6 @@ public class DialogInit {
                 } else {
                     builder.showMinMax = false;
                 }
-            } else {
-                //转圆圈
             }
         }
     }
