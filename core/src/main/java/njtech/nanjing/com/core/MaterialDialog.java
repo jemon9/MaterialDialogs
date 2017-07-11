@@ -46,6 +46,7 @@ import njtech.nanjing.com.core.internal.MDButton;
 import njtech.nanjing.com.core.internal.MDRootLayout;
 import njtech.nanjing.com.core.internal.ThemeSingleton;
 import njtech.nanjing.com.core.utils.DialogUtils;
+import njtech.nanjing.com.core.utils.RippleHelper;
 
 /**
  * Created by 张志付 on 2017/6/24.
@@ -128,7 +129,6 @@ public class MaterialDialog extends DialogBase implements View.OnClickListener, 
                 return builder.listLongCallback.onLongSelection(dialog, itemView, position, text);
             }
         } else {
-            // TODO: 2017/7/5 list single choice and multi choice 需要研究原理
             if (listType == ListType.MULTI) {
                 final CheckBox checkBox = (CheckBox) itemView.findViewById(R.id.md_control);
                 if (!checkBox.isEnabled()) {
@@ -567,7 +567,7 @@ public class MaterialDialog extends DialogBase implements View.OnClickListener, 
                     d = DialogUtils.resolveDrawable(getContext(), R.attr.md_btn_positive_selector);
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                         //设置水波效果
-                        // TODO: 2017/6/28 设置drawable的水波效果
+                        RippleHelper.apply(d,builder.buttonRippleColor);
                     }
                     return d;
                 }
@@ -582,7 +582,7 @@ public class MaterialDialog extends DialogBase implements View.OnClickListener, 
                     d = DialogUtils.resolveDrawable(getContext(), R.attr.md_btn_neutral_selector);
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                         //设置水波效果
-                        // TODO: 2017/6/28 设置drawable的水波效果
+                        RippleHelper.apply(d,builder.buttonRippleColor);
                     }
                     return d;
                 }
@@ -597,7 +597,7 @@ public class MaterialDialog extends DialogBase implements View.OnClickListener, 
                     d = DialogUtils.resolveDrawable(getContext(), R.attr.md_btn_negative_selector);
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                         //设置水波效果
-                        // TODO: 2017/6/28 设置drawable的水波效果
+                        RippleHelper.apply(d,builder.buttonRippleColor);
                     }
                     return d;
                 }
@@ -959,7 +959,6 @@ public class MaterialDialog extends DialogBase implements View.OnClickListener, 
             return this;
         }
 
-        // TODO: 2017/6/27 根据colorId获取按钮颜色的原理有待研究
         public Builder positiveColorRes(@ColorRes int positiveColorRes) {
             return positiveColor(DialogUtils.getActionTextColorStateList(context, positiveColorRes));
         }
